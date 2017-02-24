@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">HackRF Interface</string>
+    <string name="bt_openHackRF">Open HackRF One Device</string>
+    <string name="RF_board_text">Open HackRF Board ID: </string>
 </resources>
