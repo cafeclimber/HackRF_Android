@@ -3,10 +3,16 @@ package com.cafeclimber.hackrfinterface;
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.StrictMode;
+import android.support.v4.widget.DrawerLayout;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.View;
+import android.widget.Adapter;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.TextView;
 
 // hackrf_android includes
@@ -23,8 +29,9 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
     public final static Integer INITIAL_SAMP_RATE = 15000000; // 15Msps
 
     // GUI Elements:
-    private Button   bt_Info   = null;
-    private TextView tv_output = null;
+    private Button   bt_Info         = null;
+    private Button   bt_OpenHackRF   = null;
+    private TextView tv_output       = null;
 
     // HackRF Instance
     private Hackrf hackrf = null;
@@ -49,6 +56,7 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
         handler = new Handler();
 
         bt_Info = (Button) findViewById(R.id.bt_Info);
+        bt_OpenHackRF = (Button) findViewById(R.id.bt_openHackRF);
         tv_output = (TextView) findViewById(R.id.tv_output);
         tv_output.setMovementMethod(new ScrollingMovementMethod()); // Makes it scroll
     }
@@ -71,6 +79,22 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
     }
 
     /**
+     * Toggles button status depending on whether a Hack RF device is currently open.
+     * Can be called from outside the GUI thread because it uses the handler reference
+     * to access the TextView.
+     *
+     * @param enable     If true, enable buttons; if false, disable buttons
+     */
+    public void toggleButtonsEnabledIfHackRFReady(final boolean enable) {
+        handler.post(new Runnable() {
+            public void run() {
+                bt_Info.setEnabled(enable);
+                bt_OpenHackRF.setEnabled(!enable);
+            }
+        });
+    }
+
+    /**
      * Is called by the hackrf_android library after the device is ready.
      * Triggered by the initHackrf() call in openHackrf().
      * See HackrfCallbackInterface.java
@@ -82,6 +106,7 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
         tv_output.append("HackRF is ready!\n");
 
         this.hackrf = hackrf;
+        toggleButtonsEnabledIfHackRFReady(true);
         // TODO: Enable other buttons now that board is available
     }
 
@@ -96,7 +121,7 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
     @Override
     public void onHackrfError(String message) {
         tv_output.append("Error while opening HackRF: " + message + "\n");
-        // TODO: Disable GUI elements
+        toggleButtonsEnabledIfHackRFReady(false);
     }
 
     /**
@@ -128,6 +153,7 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
             case PRINT_INFO:
                 infoThread();
                 break;
+            // TODO: Add TX and RX threads and callbacks
             /*case RECEIVE:
                 receiveThread();
                 break;
@@ -158,7 +184,7 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
                                            " 0x" + Integer.toHexString(tmp[5]) + "\n\n");
         } catch (HackrfUsbException e) {
             printOnScreen("[ERROR] Failed to retrieve board information!\n");
-            // TODO: Disable buttons. The HackRF is no longer available
+            toggleButtonsEnabledIfHackRFReady(false);
         }
     }
 }
