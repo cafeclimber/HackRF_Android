@@ -1,11 +1,24 @@
 <resources>
     <string name="app_name">HackRF Interface</string>
 
+    <!-- Button texts -->
     <string name="bt_openHackRF">Open HackRF One Device</string>
     <string name="bt_Info">Info</string>
-    <string name="bt_TX">Transmit</string>
-    <string name="bt_RX">Receive</string>
+    <string name="bt_TX">TX</string>
+    <string name="bt_RX">RX</string>
     <string name="bt_Stop">Stop</string>
+
+    <!-- Input field labels -->
+    <string name="sampRate">Sample Rate:</string>
+    <string name="defaultSampRate">2000000</string> <!-- 2 MSps -->
+    <string name="freq">Frequency:</string>
+    <string name="defaultFreq">95100000</string> <!-- 95.1 MHz -->
+    <string name="filename">Filename</string>
+    <string name="defaultFilename">hackrf_android.iq</string>
+    <string name="vgaGain">VGA Gain</string>
+    <string name="lnaGain">LNA Gain</string>
+    <string name="amp">Amplifier</string>
+    <string name="antenna">Antenna Port Power</string>
 
     <string name="RF_board_text">Open HackRF Board ID: </string>
 </resources>
