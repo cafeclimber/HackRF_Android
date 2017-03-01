@@ -61,7 +61,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/bt_Info"
-        android:layout_alignBaseline="@id/et_sampRate"
+        android:layout_alignBaseline="@+id/et_sampRate"
         android:text="@string/sampRate"/> <!-- tv_sampRateLabel -->
 
     <EditText
@@ -81,7 +81,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/tv_sampRateLabel"
-        android:layout_alignBaseline="@id/et_freq"
+        android:layout_alignBaseline="@+id/et_freq"
         android:text="@string/freq"/> <!-- tv_freLabel -->
 
     <EditText
@@ -101,7 +101,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/tv_freqLabel"
-        android:layout_alignBaseline="@id/et_filename"
+        android:layout_alignBaseline="@+id/et_filename"
         android:text="@string/filename"/> <!-- tv_freLabel -->
 
     <EditText

@@ -40,9 +40,10 @@ import static com.cafeclimber.hackrfinterface.MainActivity.Task.PRINT_INFO;
 import static com.cafeclimber.hackrfinterface.MainActivity.Task.RECEIVE;
 import static com.cafeclimber.hackrfinterface.MainActivity.Task.TRANSMIT;
 
-// TODO: Make @param docstrings consistent.
+// TODO: Make this use internal storage. Might use a lot of space
 public class MainActivity extends Activity implements Runnable, HackrfCallbackInterface {
-    public final static Integer INITIAL_SAMP_RATE = 15000000; // 15Msps
+    public final static Integer INITIAL_SAMP_RATE = 15000000; // 15 MSps
+    public final static Integer PACKET_SIZE = 1000;
 
     // GUI Elements:
     private Button   bt_OpenHackRF  = null;
@@ -235,7 +236,7 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
      * Callback method for Info button. Changes task to PRINT_INFO
      * and spins up a new thread.
      *
-     * @param view The parent view
+     * @param view Reference to the calling view (bt_Info)
      */
     public void info(View view) {
         if (hackrf != null) {
@@ -248,7 +249,7 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
      * Callback for 'TX' button. Reads GUI Elements in to class variables,
      * sets the task to transmit, and spins up a new thread (which will run receiveThread())
      *
-     * @param view The view context in which this function was called
+     * @param view Reference to the calling view (bt_TX)
      */
     public void tx(View view) {
         if (hackrf != null) {
@@ -264,7 +265,7 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
      * Callback for 'RX' button. Reads GUI Elements in to class variables,
      * sets the task to receive, and spins up a new thread (which will run receiveThread())
      *
-     * @param view The view context in which this function was called
+     * @param view Reference to the calling view (bt_RX)
      */
     public void rx(View view) {
         if (hackrf!= null) {
@@ -281,7 +282,7 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
      * which causes the current thread to to shut down. It will then set the
      * transceiver mode of the HackRF to off.
      *
-     * @param view Context in which this function was called
+     * @param view Reference to the calling view (bt_Stop)
      */
     public void stop(View view) {
         stopRequested = false;
@@ -534,9 +535,7 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
                 // Grab one packet from the top of the queue. Will block if queue is
                 // empty and timeout after one second if the queue stays empty.
 
-                // TODO: Get rid of magic constant?
-                // TODO: Change packet size?
-                byte[] receivedBytes = queue.poll(1000, TimeUnit.MILLISECONDS);
+                byte[] receivedBytes = queue.poll(PACKET_SIZE, TimeUnit.MILLISECONDS);
 
                 /* HERE should be the DSP portion of the app. The receivedBytes
                  * variable now contains a byte array of size hackrf.getPacketSize().
