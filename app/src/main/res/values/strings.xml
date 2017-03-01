@@ -4,8 +4,8 @@
     <!-- Button texts -->
     <string name="bt_openHackRF">Open HackRF One Device</string>
     <string name="bt_Info">Info</string>
-    <string name="bt_TX">TX</string>
-    <string name="bt_RX">RX</string>
+    <string name="bt_TX">Transmit</string>
+    <string name="bt_RX">Receive</string>
     <string name="bt_Stop">Stop</string>
 
     <!-- Input field labels -->
