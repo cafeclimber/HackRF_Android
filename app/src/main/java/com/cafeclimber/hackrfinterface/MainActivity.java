@@ -1,13 +1,17 @@
 package com.cafeclimber.hackrfinterface;
 
 import android.app.Activity;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.StrictMode;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
+import android.util.Xml;
 import android.view.View;
 import android.widget.Adapter;
 import android.widget.AdapterView;
@@ -34,6 +38,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.jar.Manifest;
 
 import static com.cafeclimber.hackrfinterface.MainActivity.Task.IDLE;
 import static com.cafeclimber.hackrfinterface.MainActivity.Task.PRINT_INFO;
@@ -44,6 +49,7 @@ import static com.cafeclimber.hackrfinterface.MainActivity.Task.TRANSMIT;
 public class MainActivity extends Activity implements Runnable, HackrfCallbackInterface {
     public final static Integer INITIAL_SAMP_RATE = 15000000; // 15 MSps
     public final static Integer PACKET_SIZE = 1000;
+    private static final String foldername = "/HackRF"; // Folder name for capture files
 
     // GUI Elements:
     private Button   bt_OpenHackRF  = null;
@@ -78,7 +84,6 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
 
     private boolean stopRequested = false; // Used to stop RX/TX thread
     private boolean repeatTransmitting = false; // Set to true to rewind sample file for each use
-    private static final String foldername = "HackRF"; // Folder name for capture files
 
     // Used for other threads to access the main GUI thread
     private Handler handler;
@@ -146,7 +151,7 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
      */
     @Override
     public void onHackrfReady(Hackrf hackrf) {
-        tv_output.append("[INFO]  HackRF is ready!\n");
+        tv_output.append("   [INFO]  HackRF is ready!\n");
 
         this.hackrf = hackrf;
         toggleButtonsEnabledIfHackRFReady(true);
@@ -233,6 +238,15 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
     }
 
     /**
+     * Primarily for debugging.
+     * @return If external storage is writable: true; else: false
+     */
+    public boolean isExternalStorageWritable() {
+        String state = Environment.getExternalStorageState();
+        return Environment.MEDIA_MOUNTED.equals(state);
+    }
+
+    /**
      * Callback method for Info button. Changes task to PRINT_INFO
      * and spins up a new thread.
      *
@@ -254,7 +268,7 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
     public void tx(View view) {
         if (hackrf != null) {
             readGuiElements();
-            task = RECEIVE;
+            task = TRANSMIT;
             stopRequested = false;
             new Thread(this).start();
             toggleButtonsEnabledIfTransceiving(true);
@@ -270,7 +284,7 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
     public void rx(View view) {
         if (hackrf!= null) {
             readGuiElements();
-            task = TRANSMIT;
+            task = RECEIVE;
             stopRequested = false;
             new Thread(this).start();
             toggleButtonsEnabledIfTransceiving(true);
@@ -328,12 +342,12 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
             int boardID = hackrf.getBoardID();
             int tmp[] = hackrf.getPartIdAndSerialNo();
 
-            printOnScreen("[INFO]  Board ID:    " + boardID + "("
+            printOnScreen("   [INFO]  Board ID:    " + boardID + "("
                     + Hackrf.convertBoardIdToString(boardID) + ")\n" );
-            printOnScreen("[INFO]  Version:     " + hackrf.getVersionString() + "\n" );
-            printOnScreen("[INFO]  PartID:    0x" + Integer.toHexString(tmp[0]) +
+            printOnScreen("   [INFO]  Version:     " + hackrf.getVersionString() + "\n" );
+            printOnScreen("   [INFO]  PartID:    0x" + Integer.toHexString(tmp[0]) +
                                          "    0x" + Integer.toHexString(tmp[1]) + "\n");
-            printOnScreen("[INFO]  Serial No. 0x" + Integer.toHexString(tmp[2]) +
+            printOnScreen("   [INFO]  Serial No. 0x" + Integer.toHexString(tmp[2]) +
                                             " 0x" + Integer.toHexString(tmp[3]) +
                                             " 0x" + Integer.toHexString(tmp[4]) +
                                             " 0x" + Integer.toHexString(tmp[5]) + "\n\n");
@@ -360,20 +374,20 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
 
         try {
             // First set all parameters:
-            printOnScreen("[INFO]  Setting Sample Rate to " + sampRate + "Sps ...");
+            printOnScreen("   [INFO]  Setting Sample Rate to " + sampRate + "Sps ...");
             hackrf.setSampleRate(sampRate, 1);
-            printOnScreen(" Done. \n [INFO]  Setting Frequency to " + frequency + "Hz ...");
+            printOnScreen(" Done. \n   [INFO]  Setting Frequency to " + frequency + "Hz ...");
             hackrf.setFrequency(frequency);
-            printOnScreen(" Done. \n [INFO]  Setting Baseband Filter Bandwidth to "
+            printOnScreen(" Done. \n   [INFO]  Setting Baseband Filter Bandwidth to "
                     + basebandFilterWidth + " Hz ...");
             hackrf.setBasebandFilterBandwidth(basebandFilterWidth);
-            printOnScreen(" Done. \n [INFO]  Setting TX VGA Gain to " + vgaGain + " ...");
+            printOnScreen(" Done. \n   [INFO]  Setting TX VGA Gain to " + vgaGain + " ...");
             hackrf.setRxVGAGain(lnaGain);
-            printOnScreen(" Done. \n [INFO]  Setting LNA Gain to " + lnaGain + "...");
+            printOnScreen(" Done. \n   [INFO]  Setting LNA Gain to " + lnaGain + "...");
             hackrf.setRxLNAGain(vgaGain);
-            printOnScreen(" Done. \n [INFO]  Setting Amplifier to " + amp + " ... ");
+            printOnScreen(" Done. \n   [INFO]  Setting Amplifier to " + amp + " ... ");
             hackrf.setAmp(amp);
-            printOnScreen(" Done. \n [INFO]  Setting Antenna Power to " + antennaPower + " ...");
+            printOnScreen(" Done. \n   [INFO]  Setting Antenna Power to " + antennaPower + " ...");
             hackrf.setAntennaPower(antennaPower);
             printOnScreen(" Done.\n\n");
 
@@ -385,7 +399,7 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
             // Open a file ...
             File file = new File(Environment.getExternalStorageDirectory() + "/"
                     + foldername, filename);
-            printOnScreen("[INFO]  Reading samples from" + file.getAbsolutePath() + "\n");
+            printOnScreen("   [INFO]  Reading samples from" + file.getAbsolutePath() + "\n");
             if (!file.exists()) {
                 printOnScreen("[ERROR] File does not exist!\n");
                 return;
@@ -395,7 +409,7 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
             BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(file));
 
             // Start transmitting
-            printOnScreen("[INFO]  Start transmitting...\n");
+            printOnScreen("   [INFO]  Start transmitting...\n");
             ArrayBlockingQueue<byte[]> queue = hackrf.startTX();
 
             // Run until the user hits the 'Stop' button
@@ -415,18 +429,18 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
                 if (bufferedInputStream.read(packet, 0, packet.length) != packet.length) {
                     // If repeatTransmitting is set, we rewind. Otherwise, we stop
                     if (repeatTransmitting) {
-                        printOnScreen("[INFO]  Reached End of File. Start over.\n");
+                        printOnScreen("   [INFO]  Reached End of File. Start over.\n");
                         bufferedInputStream.close();
                         new BufferedInputStream(new FileInputStream(file));
                     }
                     else {
-                        printOnScreen("[INFO]  Reached End of File. Stop.\n");
+                        printOnScreen("   [INFO]  Reached End of File. Stop.\n");
                         break;
                     }
                 }
 
                 // Put the packet into the queue
-                if (queue.offer(packet, 1000, TimeUnit.MILLISECONDS) == false) {
+                if (!queue.offer(packet, 1000, TimeUnit.MILLISECONDS)) {
                     printOnScreen("[ERROR] Queue is full. Stop transmitting.\n");
                     break;
                 }
@@ -436,7 +450,7 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
                     long bytes = (hackrf.getTransceiverPacketCounter() -
                             lastTransceiverPacketCounter) * hackrf.getPacketSize();
                     double time = (hackrf.getTransceivingTime() - lastTransceivingTime) / 1000.0;
-                    printOnScreen( String.format("[INFO]  Current Transfer Rate: %4.1f MB/s\n", (
+                    printOnScreen( String.format("   [INFO]  Current Transfer Rate: %4.1f MB/s\n", (
                             bytes / time) / 1000000.0));
                     lastTransceiverPacketCounter = hackrf.getTransceiverPacketCounter();
                     lastTransceivingTime = hackrf.getTransceivingTime();
@@ -445,9 +459,9 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
 
             // After loop ends, close the file and print more statistics
             bufferedInputStream.close();
-            printOnScreen( String.format("[INFO]  Finished! (Average Transfer Rate: %4.1f MB/s\n",
+            printOnScreen( String.format("   [INFO]  Finished! (Average Transfer Rate: %4.1f MB/s\n",
                     hackrf.getAverageTransceiveRate() / 1000000.0));
-            printOnScreen( String.format("[INFO]  Recorded %d packets (of %d bytes) in %5.3f seconds.\n\n,",
+            printOnScreen( String.format("   [INFO]  Recorded %d packets (of %d bytes) in %5.3f seconds.\n\n,",
                     hackrf.getTransceiverPacketCounter(),
                     hackrf.getPacketSize(),
                     hackrf.getTransceivingTime() / 1000.0));
@@ -486,46 +500,50 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
 
         try {
             // First set all parameters:
-            printOnScreen("[INFO]  Setting Sample Rate to " + sampRate + "Sps ...");
+            printOnScreen("   [INFO]  Setting Sample Rate to " + sampRate + "Sps ...");
             hackrf.setSampleRate(sampRate, 1);
-            printOnScreen(" Done. \n [INFO]  Setting Frequency to " + frequency + "Hz ...");
+            printOnScreen(" Done. \n   [INFO]  Setting Frequency to " + frequency + "Hz ...");
             hackrf.setFrequency(frequency);
-            printOnScreen(" Done. \n [INFO]  Setting Baseband Filter Bandwidth to "
+            printOnScreen(" Done. \n   [INFO]  Setting Baseband Filter Bandwidth to "
                     + basebandFilterWidth + " Hz ...");
             hackrf.setBasebandFilterBandwidth(basebandFilterWidth);
-            printOnScreen(" Done. \n [INFO]  Setting RX VGA Gain to " + vgaGain + " ...");
+            printOnScreen(" Done. \n   [INFO]  Setting RX VGA Gain to " + vgaGain + " ...");
             hackrf.setRxVGAGain(lnaGain);
-            printOnScreen(" Done. \n [INFO]  Setting LNA Gain to " + lnaGain + "...");
+            printOnScreen(" Done. \n   [INFO]  Setting LNA Gain to " + lnaGain + "...");
             hackrf.setRxLNAGain(vgaGain);
-            printOnScreen(" Done. \n [INFO]  Setting Amplifier to " + amp + " ... ");
+            printOnScreen(" Done. \n   [INFO]  Setting Amplifier to " + amp + " ... ");
             hackrf.setAmp(amp);
-            printOnScreen(" Done. \n [INFO]  Setting Antenna Power to " + antennaPower + " ...");
+            printOnScreen(" Done. \n   [INFO]  Setting Antenna Power to " + antennaPower + " ...");
             hackrf.setAntennaPower(antennaPower);
             printOnScreen(" Done.\n\n");
 
-            if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
-                printOnScreen("[ERROR] External Media Storage not available. \n\n");
-                return;
+            if (ContextCompat.checkSelfPermission(this,
+                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                        0);
+                printOnScreen("[ERROR] Requesting write permissions, please try again.");
             }
 
             // Create a file...
             // If no filename was given, write to /dev/null
-            File file;
-            if(filename.equals("")) {
-                file = new File("/dev/", "null");
-            }
-            else {
-                file = new File(Environment.getExternalStorageState() + "/" + foldername, filename);
+            String root = Environment.getExternalStorageDirectory().toString();
+            File dir = new File(root + foldername);
+            if (!dir.mkdirs()) {
+                printOnScreen("[ERROR] Failed to create HackRF directory!\n");
             }
 
-            file.getParentFile().mkdir(); // Create folder if it doesn't exist
-            printOnScreen("[INFO]  Saving samples to " + file.getAbsolutePath() + "\n");
+            File file = new File(dir, filename);
+            if (!file.exists()) {
+                printOnScreen("[ERROR] Failed to create file!\n");
+            }
 
             // ... then open it with a buffered output stream
             BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(file));
 
             // Start Receiving:
-            printOnScreen("[INFO]  Start receiving... \n");
+            printOnScreen("   [INFO]  Start receiving... \n");
             ArrayBlockingQueue<byte[]> queue = hackrf.startRX();
 
             // Run until the use hits the 'Stop' button
@@ -576,7 +594,7 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
                     long bytes = (hackrf.getTransceiverPacketCounter()
                             - lastTransceiverPacketCounter) * hackrf.getPacketSize();
                     double time = (hackrf.getTransceivingTime() - lastTransceivingTime) / 1000.0;
-                    printOnScreen( String.format("[INFO]  Current Transfer Rate: %4.1f MB/s\n",
+                    printOnScreen( String.format("   [INFO]  Current Transfer Rate: %4.1f MB/s\n",
                             (bytes / time) / 1000000.0));
                     lastTransceiverPacketCounter = hackrf.getTransceiverPacketCounter();
                     lastTransceivingTime = hackrf.getTransceivingTime();
@@ -585,9 +603,9 @@ public class MainActivity extends Activity implements Runnable, HackrfCallbackIn
 
             // After loop ends, close the file and print more statistics
             bufferedOutputStream.close();
-            printOnScreen( String.format("[INFO]  Finished! (Average Transfer Rate: %4.1f MB/s\n",
+            printOnScreen( String.format("   [INFO]  Finished! (Average Transfer Rate: %4.1f MB/s\n",
                     hackrf.getAverageTransceiveRate() / 1000000.0));
-            printOnScreen( String.format("[INFO]  Recorded %d packets (of %d bytes) in %5.3f seconds.\n\n,",
+            printOnScreen( String.format("   [INFO]  Recorded %d packets (of %d bytes) in %5.3f seconds.\n\n,",
                     hackrf.getTransceiverPacketCounter(),
                     hackrf.getPacketSize(),
                     hackrf.getTransceivingTime() / 1000.0));
